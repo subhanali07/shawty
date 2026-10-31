@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   ArrowRightIcon,
   CheckIcon,
@@ -263,7 +263,70 @@ function Backdrop() {
   )
 }
 
-function Header() {
+function CreditBadge({ compact = false, active = true, observe = false, className }) {
+  const ref = useRef(null)
+  const [inView, setInView] = useState(!observe)
+
+  useEffect(() => {
+    if (!observe) return undefined
+    const node = ref.current
+    if (!node || typeof IntersectionObserver === 'undefined') {
+      setInView(true)
+      return undefined
+    }
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setInView(true)
+          observer.disconnect()
+        }
+      },
+      { threshold: 0.6 },
+    )
+    observer.observe(node)
+    return () => observer.disconnect()
+  }, [observe])
+
+  const revealed = active && inView
+
+  return (
+    <a
+      ref={ref}
+      href="https://subhanali.xyz"
+      target="_blank"
+      rel="noreferrer"
+      className={cn(
+        'group relative inline-flex shrink-0 items-center overflow-hidden border-2 border-ink bg-saffron font-display font-bold normal-case tracking-normal text-ink shadow-hard transition-all duration-200 hover:-translate-x-0.5 hover:-translate-y-0.5 hover:rotate-1 hover:bg-vermilion hover:text-cream hover:shadow-hard-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cobalt focus-visible:ring-offset-2 focus-visible:ring-offset-paper',
+        compact ? 'gap-1.5 px-2 py-1.5 text-[11px] sm:px-2.5 sm:text-xs' : 'gap-2.5 px-4 py-2.5 text-sm sm:text-base',
+        revealed ? 'animate-credit-whoosh' : 'opacity-0',
+        className,
+      )}
+    >
+      <span className="credit-sheen" aria-hidden="true" />
+      {compact ? (
+        <span className="relative z-10">
+          <span className="hidden sm:inline">Made by </span>
+          Subhan Ali
+        </span>
+      ) : (
+        <>
+          <span className="relative z-10 grid h-6 w-6 shrink-0 place-items-center border-2 border-ink bg-cream font-mono text-[9px] font-bold">
+            SA
+          </span>
+          <span className="relative z-10">Made by Subhan Ali</span>
+        </>
+      )}
+      <ExternalLinkIcon
+        className={cn(
+          'relative z-10 shrink-0 transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5',
+          compact ? 'h-3.5 w-3.5' : 'h-4 w-4',
+        )}
+      />
+    </a>
+  )
+}
+
+function Header({ introDone }) {
   return (
     <header className="sticky top-0 z-40 border-b-2 border-ink bg-paper/85 backdrop-blur-md">
       <div className="mx-auto flex h-16 w-full max-w-5xl items-center justify-between gap-4 px-4 sm:px-6">
@@ -274,7 +337,7 @@ function Header() {
           </span>
         </a>
 
-        <nav className="flex items-center gap-4 sm:gap-6">
+        <nav className="flex items-center gap-2 sm:gap-6">
           <a
             href="#shorten"
             className="group relative hidden text-[10px] font-bold uppercase tracking-[0.18em] text-ink/55 transition-colors hover:text-ink sm:inline-block"
@@ -293,11 +356,13 @@ function Header() {
             href="/docs"
             target="_blank"
             rel="noreferrer"
+            aria-label="API docs"
             className="inline-flex items-center gap-1.5 border-2 border-ink bg-cream px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-ink shadow-hard-xs transition-all duration-150 hover:-translate-y-0.5 hover:bg-saffron hover:shadow-hard active:translate-y-0.5 active:shadow-none"
           >
             <CodeIcon className="h-3.5 w-3.5" />
-            API
+            <span className="hidden sm:inline">API</span>
           </a>
+          <CreditBadge compact active={introDone} />
         </nav>
       </div>
     </header>
@@ -778,7 +843,7 @@ export default function App() {
     <div className="relative min-h-screen overflow-x-hidden text-ink">
       <Backdrop />
       {!introDone && <BreezeIntro leaving={introLeaving} onDone={() => setIntroDone(true)} />}
-      <Header />
+      <Header introDone={introDone} />
 
       <main className="mx-auto w-full max-w-5xl px-4 pb-16 sm:px-6">
         <section className="animate-rise pt-8 sm:pt-10">
@@ -1027,34 +1092,31 @@ export default function App() {
           </Card>
         </section>
 
-        <footer className="mt-12 flex flex-col items-start justify-between gap-3 border-t-2 border-ink/15 py-6 font-mono text-[10px] uppercase tracking-[0.14em] text-ink/45 sm:flex-row sm:items-center">
-          <div className="flex items-center gap-2">
-            <span aria-hidden="true" className="h-2 w-2 border border-ink bg-vermilion" />
-            <span aria-hidden="true" className="h-2 w-2 border border-ink bg-saffron" />
-            <span aria-hidden="true" className="h-2 w-2 border border-ink bg-cobalt" />
-            <span className="ml-1">shawty — links, shortened</span>
+        <footer className="mt-12 border-t-2 border-ink/15 py-6">
+          <div className="flex flex-col items-start justify-between gap-3 font-mono text-[10px] uppercase tracking-[0.14em] text-ink/45 sm:flex-row sm:items-center">
+            <div className="flex items-center gap-2">
+              <span aria-hidden="true" className="h-2 w-2 border border-ink bg-vermilion" />
+              <span aria-hidden="true" className="h-2 w-2 border border-ink bg-saffron" />
+              <span aria-hidden="true" className="h-2 w-2 border border-ink bg-cobalt" />
+              <span className="ml-1">shawty — links, shortened</span>
+            </div>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+              <a
+                href="/docs"
+                target="_blank"
+                rel="noreferrer"
+                className="transition-colors hover:text-ink"
+              >
+                API docs
+              </a>
+              <span className="normal-case tracking-normal text-ink/35">
+                {host || API_BASE || 'shawty'}
+              </span>
+            </div>
           </div>
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-            <a
-              href="https://subhanali.xyz"
-              target="_blank"
-              rel="noreferrer"
-              className="group inline-flex items-center gap-1.5 normal-case tracking-normal text-ink/55 transition-colors hover:text-ink"
-            >
-              Made by Subhan Ali
-              <ExternalLinkIcon className="h-3 w-3 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
-            </a>
-            <a
-              href="/docs"
-              target="_blank"
-              rel="noreferrer"
-              className="transition-colors hover:text-ink"
-            >
-              API docs
-            </a>
-            <span className="normal-case tracking-normal text-ink/35">
-              {host || API_BASE || 'shawty'}
-            </span>
+          <div className="mt-5 flex items-center gap-3 sm:justify-end">
+            <span aria-hidden="true" className="h-px flex-1 bg-ink/15 sm:hidden" />
+            <CreditBadge observe />
           </div>
         </footer>
       </main>
