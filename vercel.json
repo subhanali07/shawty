@@ -3,11 +3,13 @@
   "services": {
     "app": {
       "root": ".",
-      "framework": "fastapi"
-    },
-    "frontend": {
-      "root": "frontend",
-      "framework": "vite"
+      "framework": "fastapi",
+      "buildCommand": "cd frontend && npm ci && npm run build",
+      "functions": {
+        "main.py": {
+          "maxDuration": 30
+        }
+      }
     }
   },
   "rewrites": [

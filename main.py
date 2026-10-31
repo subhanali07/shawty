@@ -12,12 +12,32 @@ from pydantic import BaseModel, Field, HttpUrl, field_validator
 from sqlalchemy import String, create_engine, func, inspect, select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, sessionmaker
+from sqlalchemy.pool import NullPool
 
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./links.db")
-if DATABASE_URL.startswith("postgres://"):
-    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+psycopg://", 1)
-elif DATABASE_URL.startswith("postgresql://"):
-    DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg://", 1)
+
+def resolve_database_url() -> str:
+    url = (
+        os.getenv("DATABASE_URL")
+        or os.getenv("POSTGRES_URL")
+        or os.getenv("POSTGRES_URL_NON_POOLING")
+    )
+    if not url:
+        if os.getenv("VERCEL"):
+            print(
+                "WARNING: DATABASE_URL is not set; using /tmp SQLite. "
+                "Links will not persist across deployments or instances."
+            )
+            return "sqlite:////tmp/shawty.db"
+        return "sqlite:///./links.db"
+
+    if url.startswith("postgres://"):
+        url = "postgresql+psycopg://" + url[len("postgres://") :]
+    elif url.startswith("postgresql://"):
+        url = "postgresql+psycopg://" + url[len("postgresql://") :]
+    return url
+
+
+DATABASE_URL = resolve_database_url()
 BASE_URL = os.getenv("BASE_URL")
 FRONTEND_DIST = Path(__file__).resolve().parent / "frontend" / "dist"
 FRONTEND_ORIGINS = os.getenv(
@@ -39,11 +59,19 @@ def utcnow() -> datetime:
 
 
 IS_SQLITE = DATABASE_URL.startswith("sqlite")
-engine = create_engine(
-    DATABASE_URL,
-    connect_args={"check_same_thread": False} if IS_SQLITE else {},
-    pool_pre_ping=True,
-)
+if IS_SQLITE:
+    engine = create_engine(
+        DATABASE_URL,
+        connect_args={"check_same_thread": False, "timeout": 30},
+        pool_pre_ping=True,
+    )
+else:
+    engine = create_engine(
+        DATABASE_URL,
+        connect_args={"prepare_threshold": None},
+        poolclass=NullPool,
+        pool_pre_ping=True,
+    )
 SessionLocal = sessionmaker(bind=engine, autoflush=False)
 
 
