@@ -1034,7 +1034,16 @@ export default function App() {
             <span aria-hidden="true" className="h-2 w-2 border border-ink bg-cobalt" />
             <span className="ml-1">shawty — links, shortened</span>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            <a
+              href="https://subhanali.xyz"
+              target="_blank"
+              rel="noreferrer"
+              className="group inline-flex items-center gap-1.5 normal-case tracking-normal text-ink/55 transition-colors hover:text-ink"
+            >
+              Made by Subhan Ali
+              <ExternalLinkIcon className="h-3 w-3 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+            </a>
             <a
               href="/docs"
               target="_blank"
